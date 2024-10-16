@@ -1,0 +1,72 @@
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
+#include <ESP8266WiFi.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_PCD8544.h>
+#include <SPI.h>
+
+// GPS module pins
+static const int RXPin = D3, TXPin = D4;
+static const uint32_t GPSBaud = 9600;
+
+// Nokia 5110 pins
+#define CLK D1
+#define DIN D2
+#define DC  D5
+#define CE  D6
+#define RST D7
+
+// Initialize TinyGPS++ library
+TinyGPSPlus gps;
+
+// Use SoftwareSerial to communicate with GPS module
+SoftwareSerial ss(RXPin, TXPin);
+
+// Initialize Nokia 5110 display
+Adafruit_PCD8544 display = Adafruit_PCD8544(CLK, DIN, DC, CE, RST);
+
+void setup() {
+  Serial.begin(9600);
+  ss.begin(GPSBaud);
+
+  // Initialize Nokia 5110 display
+  display.begin();
+  display.setContrast(50);  // Adjust for readability
+  display.setRotation(2);   // Rotate the display if needed
+  display.clearDisplay();
+  
+  Serial.println("GPS Speed and Altitude Measurement with Nokia 5110");
+}
+
+void loop() {
+  // Check if new GPS data is available
+  while (ss.available() > 0) {
+    if (gps.encode(ss.read())) {
+      
+      // Clear display
+      display.clearDisplay();
+
+      // Display Speed in km/h
+      if (gps.speed.isValid()) {
+        display.setCursor(0, 0);
+        display.setTextSize(1);
+        display.println("Speed:");
+        display.setTextSize(1);
+        display.print(gps.speed.kmph(), 1);  // Speed in km/h
+        display.println(" km/h");
+      }
+
+      // Display Altitude in meters
+      if (gps.altitude.isValid()) {
+        display.setCursor(0, 20);
+        display.setTextSize(1);
+        display.println("Altitude:");
+        display.setTextSize(1);
+        display.print(gps.altitude.meters(), 1);  // Altitude in meters
+        display.println(" m");
+      }
+
+      display.display();
+    }
+  }
+}
